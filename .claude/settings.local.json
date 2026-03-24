@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find 'F:/Admin/IntelliJ Projets/ArmorRepairPriority' -name *.gradle -o -name build.gradle.kts)"
+    ]
+  }
+}
