@@ -29,6 +29,10 @@ public class AutoMend extends ToggleableModule {
 
     private final BooleanSetting offhandToo = new BooleanSetting(
             "UseOffhand", "Puts the second-most damaged mending piece in offhand (Temporarily disables AutoTotem)", false);
+    private final BooleanSetting prioritizeTools = new BooleanSetting(
+            "PrioritizeTools", "When UseOffhand is on, prefer the most-damaged tool over the second-most damaged armor piece", false);
+    private final BooleanSetting announce = new BooleanSetting(
+            "Announce", "Show an action bar message when a mending piece finishes repairing", true);
     private final NumberSetting<Integer> clickDelay = new NumberSetting<>(
             "ClickDelay", "Milliseconds between inventory clicks", 10, 0, 500);
 
@@ -43,7 +47,7 @@ public class AutoMend extends ToggleableModule {
 
     public AutoMend() {
         super("AutoMender", "Wear the most-damaged mending piece so XP repairs it", ModuleCategory.PLAYER);
-        this.registerSettings(this.offhandToo, this.clickDelay);
+        this.registerSettings(this.offhandToo, this.prioritizeTools, this.announce, this.clickDelay);
     }
 
     @Override
@@ -103,16 +107,16 @@ public class AutoMend extends ToggleableModule {
 
         if (System.currentTimeMillis() < manualCooldownUntil) return;
 
-        handleRepairCycler(player);
+        handleItemSwapper(player);
     }
 
-    private void handleRepairCycler(LocalPlayer player) {
+    private void handleItemSwapper(LocalPlayer player) {
         if (mc.level == null) return;
         Holder<Enchantment> mending = MendingScanner.resolveMending(mc.level);
         List<Slot> pieces = MendingScanner.scan(player, mc.level);
         List<Slot> tools  = MendingScanner.scanTools(player, mc.level);
-        repairHandler.handleArmor(player, pieces);
-        repairHandler.handleOffhand(player, pieces, tools, offhandToo.getValue(), mending);
+        repairHandler.handleArmor(player, pieces, announce.getValue());
+        repairHandler.handleOffhand(player, pieces, tools, offhandToo.getValue(), mending, prioritizeTools.getValue(), announce.getValue());
     }
 
     private int inventoryHash(LocalPlayer player) {

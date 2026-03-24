@@ -2,6 +2,7 @@ package hxgn;
 
 import net.minecraft.core.Holder;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -25,7 +26,7 @@ public class RepairHandler {
         this.dispatcher = dispatcher;
     }
 
-    public void handleArmor(LocalPlayer player, List<Slot> mendingPieces) {
+    public void handleArmor(LocalPlayer player, List<Slot> mendingPieces, boolean announce) {
         for (EquipmentSlot slot : ARMOR_SLOTS) {
             final int armorSlotId = InventoryUtils.getInventorySlot(slot);
 
@@ -37,6 +38,10 @@ public class RepairHandler {
                         ItemStack toWear = candidate.getItem();
 
                         if (toWear.getDamageValue() > 0 && worn.getDamageValue() == 0) {
+                            if (announce && !worn.isEmpty() && worn.isDamageableItem()) {
+                                player.displayClientMessage(
+                                        Component.literal("[AutoMender] " + worn.getHoverName().getString() + " fully repaired!"), true);
+                            }
                             swapWithArmorSlot(candidate, armorSlotId);
                         }
                     });
@@ -44,12 +49,15 @@ public class RepairHandler {
     }
 
     public void handleOffhand(LocalPlayer player, List<Slot> mendingPieces, List<Slot> mendingTools,
-                              boolean offhandEnabled, Holder<Enchantment> mendingHolder) {
+                              boolean offhandEnabled, Holder<Enchantment> mendingHolder,
+                              boolean prioritizeTools, boolean announce) {
         if (!offhandEnabled) return;
 
-        // Prefer 2nd most damaged armor; fall back to most damaged tool
         final Slot candidate;
-        if (mendingPieces.size() >= 2 && mendingPieces.get(1).getItem().getDamageValue() > 0) {
+        boolean toolFirst = prioritizeTools && !mendingTools.isEmpty() && mendingTools.get(0).getItem().getDamageValue() > 0;
+        if (toolFirst) {
+            candidate = mendingTools.get(0);
+        } else if (mendingPieces.size() >= 2 && mendingPieces.get(1).getItem().getDamageValue() > 0) {
             candidate = mendingPieces.get(1);
         } else if (!mendingTools.isEmpty() && mendingTools.get(0).getItem().getDamageValue() > 0) {
             candidate = mendingTools.get(0);
@@ -65,13 +73,24 @@ public class RepairHandler {
 
         if (offhandHasMendingItem) {
             if (currentOffhand.getDamageValue() == 0) {
+                if (announce) {
+                    player.displayClientMessage(
+                            Component.literal("[AutoMender] " + currentOffhand.getHoverName().getString() + " fully repaired!"), true);
+                }
                 // Only shift-click back to inventory if there's space; if full, the
                 // enqueueSwap below will land it in candidate's vacated slot instead.
                 if (hasFreeInventorySlot(player)) {
                     dispatcher.enqueueClick(OFFHAND_SLOT_ID, true);
                 }
+            } else if (candidate.index == OFFHAND_SLOT_ID) {
+                return; // candidate is already in offhand, still being repaired
+            } else if (toolFirst) {
+                // Tool has priority — evict the current offhand item to make room.
+                if (hasFreeInventorySlot(player)) {
+                    dispatcher.enqueueClick(OFFHAND_SLOT_ID, true);
+                }
             } else {
-                return; // still being repaired
+                return; // not prioritizing tools, wait for current item to finish
             }
         }
 
