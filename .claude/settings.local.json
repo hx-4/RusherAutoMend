@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find 'F:/Admin/IntelliJ Projets/ArmorRepairPriority' -name *.gradle -o -name build.gradle.kts)"
+      "Bash(find 'F:/Admin/IntelliJ Projets/ArmorRepairPriority' -path */rusherhack* -name *.java)",
+      "Bash(find 'F:/Admin/IntelliJ Projets/ArmorRepairPriority' -name *.jar -path *rusherhack*)",
+      "Bash(find 'F:/Admin/IntelliJ Projets/ArmorRepairPriority/.gradle' -name *.jar)",
+      "Bash(jar tf:*)",
+      "Bash(python3 -c \"import zipfile; z=zipfile.ZipFile\\(''/c/Users/Admin/.gradle/caches/modules-2/files-2.1/org.rusherhack/rusherhack-api/1.21.4-SNAPSHOT/52f5a2a3b9be1073d2276fa4ff7b90e9e67c96fc/rusherhack-api-1.21.4-SNAPSHOT.jar''\\); [print\\(n\\) for n in z.namelist\\(\\) if ''etting'' in n]\")",
+      "Bash(unzip -l /c/Users/Admin/.gradle/caches/modules-2/files-2.1/org.rusherhack/rusherhack-api/1.21.4-SNAPSHOT/72736bab541d938e4909d80cd6c98b7ee8d91257/rusherhack-api-1.21.4-SNAPSHOT-sources.jar)",
+      "Bash(unzip -p \"/c/Users/Admin/.gradle/caches/modules-2/files-2.1/org.rusherhack/rusherhack-api/1.21.4-SNAPSHOT/72736bab541d938e4909d80cd6c98b7ee8d91257/rusherhack-api-1.21.4-SNAPSHOT-sources.jar\" \"org/rusherhack/core/setting/Setting.java\")",
+      "Bash(unzip -p \"/c/Users/Admin/.gradle/caches/modules-2/files-2.1/org.rusherhack/rusherhack-api/1.21.4-SNAPSHOT/72736bab541d938e4909d80cd6c98b7ee8d91257/rusherhack-api-1.21.4-SNAPSHOT-sources.jar\" \"org/rusherhack/core/setting/BooleanSetting.java\")",
+      "Bash(./gradlew build:*)"
     ]
   }
 }

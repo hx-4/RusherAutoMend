@@ -26,9 +26,25 @@ public class AutoMend extends ToggleableModule {
 
     private final Optional<ToggleableModule> autoTotem =
             moduleManager.getFeature("AutoTotem").map(m -> (ToggleableModule) m);
+    private final Optional<ToggleableModule> autoArmor =
+            moduleManager.getFeature("AutoArmor").map(m -> (ToggleableModule) m);
+
+    private boolean autoTotemWasOn   = false;
+    private boolean autoArmorWasOn   = false;
 
     private final BooleanSetting offhandToo = new BooleanSetting(
-            "UseOffhand", "Puts the second-most damaged mending piece in offhand (Temporarily disables AutoTotem)", false);
+            "UseOffhand", "Puts the second-most damaged mending piece in offhand (Temporarily disables AutoTotem & AutoArmor)", false)
+            .onChange(enabled -> {
+                if (!this.isToggled()) return;
+                if (enabled) {
+                    autoTotem.ifPresent(at -> {
+                        if (at.isToggled()) { at.toggle(); autoTotemWasOn = true; }
+                    });
+                } else if (autoTotemWasOn) {
+                    autoTotem.ifPresent(at -> { if (!at.isToggled()) at.toggle(); });
+                    autoTotemWasOn = false;
+                }
+            });
     private final BooleanSetting prioritizeTools = new BooleanSetting(
             "PrioritizeTools", "When UseOffhand is on, prefer the most-damaged tool over the second-most damaged armor piece", false);
     private final BooleanSetting announce = new BooleanSetting(
@@ -39,7 +55,6 @@ public class AutoMend extends ToggleableModule {
     private final ClickDispatcher dispatcher  = new ClickDispatcher(clickDelay);
     private final RepairHandler repairHandler = new RepairHandler(dispatcher);
 
-    private boolean autoTotemWasOn   = false;
     private int lastInventoryHash    = 0;
     private long manualCooldownUntil = 0L;
 
@@ -56,6 +71,16 @@ public class AutoMend extends ToggleableModule {
         manualCooldownUntil = 0L;
         repairHandler.resetSwapFlag();
         dispatcher.clear();
+
+        autoArmor.ifPresent(at -> {
+            if (at.isToggled()) { at.toggle(); autoArmorWasOn = true; }
+        });
+
+        if (offhandToo.getValue()) {
+            autoTotem.ifPresent(at -> {
+                if (at.isToggled()) { at.toggle(); autoTotemWasOn = true; }
+            });
+        }
     }
 
     @Override
@@ -64,6 +89,11 @@ public class AutoMend extends ToggleableModule {
         if (autoTotemWasOn) {
             autoTotem.ifPresent(at -> { if (!at.isToggled()) at.toggle(); });
             autoTotemWasOn = false;
+        }
+
+        if (autoArmorWasOn) {
+            autoArmor.ifPresent(at -> { if (!at.isToggled()) at.toggle(); });
+            autoArmorWasOn = false;
         }
     }
 
@@ -81,19 +111,6 @@ public class AutoMend extends ToggleableModule {
 
         if (mc.screen instanceof AbstractContainerScreen) return;
         if (!dispatcher.isEmpty()) return;
-
-        // Pause AutoTotem if offhand is in use
-        if (offhandToo.getValue()) {
-            autoTotem.ifPresent(at -> {
-                if (at.isToggled()) {
-                    autoTotemWasOn = true;
-                    at.toggle();
-                }
-            });
-        } else if (autoTotemWasOn) {
-            autoTotem.ifPresent(at -> { if (!at.isToggled()) at.toggle(); });
-            autoTotemWasOn = false;
-        }
 
         // Detect inventory changes we didn't cause
         int hash = inventoryHash(player);
